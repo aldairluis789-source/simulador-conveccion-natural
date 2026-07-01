@@ -89,7 +89,7 @@ y_max_adim = -1.0 / np.sqrt(3)
 pos_max_m = y_max_adim * B
 vz_max = ((rho_barra * g * beta_val * delta_T * (B**2)) / (12 * mu)) * (y_max_adim**3 - y_max_adim)
 
-# --- SECCIÓN SUPERIOR DE RESULTADOS (TARJETAS DINÁMICAS) ---
+# --- SECCIÓN SUPERIOR DE RESULTS (TARJETAS DINÁMICAS) ---
 st.markdown("### 📊 PANELES DE CONTROL Y RESULTADOS")
 r1, r2, r3, r4 = st.columns(4)
 
@@ -155,47 +155,39 @@ with inf_col2:
     grafico_3d_placeholder = st.empty()
 
 # --- MANEJO DE TIEMPO PARA LA ANIMACIÓN (EFECTO MOVIMIENTO) ---
-# Usamos un contador de pasos que avanza si la casilla está activada
 pasos = 25 if animar else 1
 
 for paso in range(pasos):
-    # El desfase altera levemente la posición vertical de las flechas en cada iteración
     desfase = (paso * 0.08) % 0.3
     
     fig_3d = go.Figure()
     
-    # --- CONSTRUCCIÓN DE LAS PAREDES SÓLIDAS COMPACTAS (Look idéntico a tu referencia) ---
+    # --- CONSTRUCCIÓN DE LAS PAREDES SÓLIDAS COMPACTAS ---
     ancho_bloque_x = 0.4
     espesor_visual_y = 0.008
     
-    # 1. Bloque de la Pared Caliente Izquierda (Contenedor Volumétrico Cerrado)
+    # 1. Bloque de la Pared Caliente Izquierda
     z_malla, x_malla = np.meshgrid(np.linspace(0, L, 2), np.linspace(0, ancho_bloque_x, 2))
-    # Tapa interna expuesta
     fig_3d.add_trace(go.Surface(x=x_malla, y=np.ones_like(z_malla)*(-B), z=z_malla, colorscale=[[0, '#E53935'], [1, '#E53935']], showscale=False, opacity=1.0))
-    # Tapa externa de espesor
     fig_3d.add_trace(go.Surface(x=x_malla, y=np.ones_like(z_malla)*(-B - espesor_visual_y), z=z_malla, colorscale=[[0, '#C62828'], [1, '#C62828']], showscale=False, opacity=1.0))
-    # Laterales de cierre físico de la pared
     z_lat, y_lat = np.meshgrid(np.linspace(0, L, 2), np.linspace(-B - espesor_visual_y, -B, 2))
     fig_3d.add_trace(go.Surface(x=np.zeros_like(z_lat), y=y_lat, z=z_lat, colorscale=[[0, '#B71C1C'], [1, '#B71C1C']], showscale=False, opacity=1.0))
     fig_3d.add_trace(go.Surface(x=np.ones_like(z_lat)*ancho_bloque_x, y=y_lat, z=z_lat, colorscale=[[0, '#B71C1C'], [1, '#B71C1C']], showscale=False, opacity=1.0))
 
-    # 2. Bloque de la Pared Fría Derecha (Contenedor Volumétrico Cerrado)
-    # Tapa interna expuesta
+    # 2. Bloque de la Pared Fría Derecha
     fig_3d.add_trace(go.Surface(x=x_malla, y=np.ones_like(z_malla)*(B), z=z_malla, colorscale=[[0, '#1E88E5'], [1, '#1E88E5']], showscale=False, opacity=1.0))
-    # Tapa externa de espesor
     fig_3d.add_trace(go.Surface(x=x_malla, y=np.ones_like(z_malla)*(B + espesor_visual_y), z=z_malla, colorscale=[[0, '#1565C0'], [1, '#1565C0']], showscale=False, opacity=1.0))
-    # Laterales de cierre físico de la pared
     y_lat_c = np.meshgrid(np.linspace(0, L, 2), np.linspace(B, B + espesor_visual_y, 2))[1]
     z_lat_c = np.meshgrid(np.linspace(0, L, 2), np.linspace(B, B + espesor_visual_y, 2))[0]
     fig_3d.add_trace(go.Surface(x=np.zeros_like(z_lat_c), y=y_lat_c, z=z_lat_c, colorscale=[[0, '#0D47A1'], [1, '#0D47A1']], showscale=False, opacity=1.0))
     fig_3d.add_trace(go.Surface(x=np.ones_like(z_lat_c)*ancho_bloque_x, y=y_lat_c, z=z_lat_c, colorscale=[[0, '#0D47A1'], [1, '#0D47A1']], showscale=False, opacity=1.0))
 
-    # --- TEXTOS INFORMATIVOS FLOTANTES (T2 = 120°C y T1 = 30°C) ---
+    # --- TEXTOS INFORMATIVOS FLOTANTES ---
     fig_3d.add_trace(go.Scatter3d(x=[ancho_bloque_x/2], y=[-B], z=[L + 0.1], mode='text', text=[f"T2={int(T2)}°C"], textfont=dict(color='#FF5A5A', size=13, family="Arial Black")))
     fig_3d.add_trace(go.Scatter3d(x=[ancho_bloque_x/2], y=[B], z=[L + 0.1], mode='text', text=[f"T1={int(T1)}°C"], textfont=dict(color='#5A9CFF', size=13, family="Arial Black")))
     fig_3d.add_trace(go.Scatter3d(x=[ancho_bloque_x/2], y=[0], z=[0.05], mode='text', text=[f"2B={espesor_total:.3f}m"], textfont=dict(color='gray', size=11)))
 
-    # --- INYECCIÓN DE FLECHAS DINÁMICAS (MAPA DE CONOS CON DESFASE) ---
+    # --- INYECCIÓN DE FLECHAS DINÁMICAS ---
     z_base = np.linspace(0.15, L - 0.15, 6)
     x_posiciones = [ancho_bloque_x * 0.3, ancho_bloque_x * 0.7]
     
@@ -204,15 +196,15 @@ for paso in range(pasos):
     
     for z in z_base:
         for x in x_posiciones:
-            # Corriente Ascendente Izquierda (Se le suma el desfase temporal para que suba)
+            # Corriente Ascendente Izquierda
             z_dinamico_sube = z + desfase
             if z_dinamico_sube < L - 0.1:
                 y_h = -B * 0.45
                 w_h = ((rho_barra * g * beta_val * delta_T * (B**2)) / (12 * mu)) * ((y_h/B)**3 - (y_h/B))
                 x_v.append(x); y_v.append(y_h); z_v.append(z_dinamico_sube)
-                u_v.append(0.0); v_v.append(0.0); w_v.append(w_h * 0.2) # Escalado visual
+                u_v.append(0.0); v_v.append(0.0); w_v.append(w_h * 0.2)
                 
-            # Corriente Descendente Derecha (Se le resta el desfase temporal para que baje)
+            # Corriente Descendente Derecha
             z_dinamico_baja = z - desfase
             if z_dinamico_baja > 0.1:
                 y_c = B * 0.45
@@ -220,14 +212,14 @@ for paso in range(pasos):
                 x_v.append(x); y_v.append(y_c); z_v.append(z_dinamico_baja)
                 u_v.append(0.0); v_v.append(0.0); w_v.append(w_c * 0.2)
 
-    # Render de flechas con la paleta de alto contraste 'Icefire'
+    # Render de flechas con escala estable
     fig_3d.add_trace(go.Cone(
         x=np.array(x_v), y=np.array(y_v), z=np.array(z_v),
         u=np.array(u_v), v=np.array(v_v), w=np.array(w_v),
         colorscale='Icefire', showscale=False, sizemode='scaled', sizeref=0.4, anchor='tail'
     ))
     
-    # Configuraciones estéticas del Layout de Fondo
+    # Configuraciones estéticas del Layout
     fig_3d.update_layout(
         template="plotly_dark", height=460, margin=dict(l=0, r=0, t=0, b=0), showlegend=False
     )
@@ -240,9 +232,8 @@ for paso in range(pasos):
         camera=dict(eye=dict(x=1.3, y=-1.3, z=0.8))
     )
     
-    # Actualizar el contenedor sin parpadear la página completa
-    grafico_3d_placeholder.plotly_chart(fig_3d, use_container_width=True)
+    # CRÍTICO: Agregar una clave única variable (key) para evitar el error de ID duplicado en el bucle
+    grafico_3d_placeholder.plotly_chart(fig_3d, use_container_width=True, key=f"canvas_3d_step_{paso}")
     
-    # Pausa controlada para marcar la velocidad de fotogramas por segundo (FPS) del aire
     if animar:
-        time.sleep(0.08)
+        time.sleep(0.05)
