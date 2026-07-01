@@ -141,8 +141,8 @@ with g_col2:
 
 st.markdown("---")
 
-# --- SECCIÓN INFERIOR: PROPIEDADES EN DETALLE Y MODELADO 3D REALISTA ---
-inf_col1, inf_col2 = st.columns([1.5, 1.5])
+# --- SECCIÓN INFERIOR: PROPIEDADES EN DETALLE Y MODELADO 3D SEGURO ---
+inf_col1, inf_col2 = st.columns([1.4, 1.6])
 
 with inf_col1:
     st.markdown("#### 🧪 PROPIEDADES TERMOFÍSICAS EVALUADAS Y MODELO GOBERNANTE")
@@ -168,8 +168,8 @@ with inf_col2:
     
     fig_3d = go.Figure()
     
-    # --- CONSTRUCCIÓN REALISTA DE LA PARED CALIENTE (Bloque con espesor sólido) ---
-    espesor_pared = 0.015  # Espesor físico visible de los bloques sólidos de la pared (1.5 cm)
+    # --- CONSTRUCCIÓN REALISTA DE LA PARED CALIENTE (Bloque Sólido con Espesor) ---
+    espesor_pared = 0.015  
     z_p, x_p = np.meshgrid(np.linspace(0, L, 10), np.linspace(0, 0.4, 10))
     
     # Cara interna expuesta al fluido (y = -B)
@@ -177,60 +177,60 @@ with inf_col2:
     # Cara externa estructural de la pared caliente (y = -B - espesor_pared)
     fig_3d.add_trace(go.Surface(x=x_p, y=np.ones_like(z_p)*(-B - espesor_pared), z=z_p, colorscale=[[0, '#5C0606'], [1, '#8B0000']], showscale=False, opacity=0.9))
     
-    # --- CONSTRUCCIÓN REALISTA DE LA PARED FRÍA (Bloque con espesor sólido) ---
+    # --- CONSTRUCCIÓN REALISTA DE LA PARED FRÍA (Bloque Sólido con Espesor) ---
     # Cara interna expuesta al fluido (y = +B)
     fig_3d.add_trace(go.Surface(x=x_p, y=np.ones_like(z_p)*(B), z=z_p, colorscale=[[0, '#1976D2'], [1, '#448AFF']], showscale=False, opacity=0.9))
     # Cara externa estructural de la pared fría (y = +B + espesor_pared)
     fig_3d.add_trace(go.Surface(x=x_p, y=np.ones_like(z_p)*(B + espesor_pared), z=z_p, colorscale=[[0, '#0A3156'], [1, '#104E8B']], showscale=False, opacity=0.9))
     
-    # --- GENERACIÓN DEL CAMPO VECTORIAL EN BUCLE (Flechas y líneas de corriente reales) ---
-    # Creamos una malla tridimensional en el espacio interior para simular las corrientes de giro
-    y_m, x_m, z_m = np.meshgrid(
-        np.linspace(-B + 0.002, B - 0.002, 10),
-        np.linspace(0.05, 0.35, 3),
-        np.linspace(0.05, L - 0.05, 15)
-    )
+    # --- SIMULACIÓN VECTORIAL ROBUSTA DEL BUCLE (CONOS INDEPENDIENTES) ---
+    # Colocamos niveles fijos a lo largo de la altura (Z) y profundidad (X) para sembrar los vectores
+    z_niveles = np.linspace(0.15, L - 0.15, 8)
+    x_posiciones = [0.1, 0.2, 0.3]
     
-    # Modelado cinemático hidrodinámico del movimiento circular (sube en caliente, gira, baja en frío)
-    # u: velocidad en x (cero), v: velocidad en y (giro transicional en extremos), w: velocidad axial en z (cúbica)
-    u_vel = np.zeros_like(x_m)
+    x_v, y_v, z_v = [], [], []
+    u_v, v_v, w_v = [], [], []
     
-    # Velocidad axial w (v_z cúbica escalada)
-    y_adim_m = y_m / B
-    w_vel = ((rho_barra * g * beta_val * delta_T * (B**2)) / (12 * mu)) * (y_adim_m**3 - y_adim_m)
-    
-    # Amortiguación y modulación de flujo en los extremos adiabáticos superiores e inferiores (Efecto Giro)
-    # Hacemos que la velocidad vertical disminuya al acercarse a las tapas y se transforme en velocidad horizontal de cambio (v)
-    tapa_superior = L - 0.15
-    tapa_inferior = 0.15
-    
-    v_vel = np.zeros_like(y_m)
-    # En la zona superior (z > tapa_superior), el aire que subía por la izquierda (y < 0) cruza hacia la derecha (v > 0)
-    mask_sup = z_m > tapa_superior
-    v_vel[mask_sup] = 0.4 * (1.0 - y_adim_m[mask_sup]**2)
-    w_vel[mask_sup] *= (L - z_m[mask_sup]) / 0.15
-    
-    # En la zona inferior (z < tapa_inferior), el aire que bajaba por la derecha (y > 0) cruza hacia la izquierda (v < 0)
-    mask_inf = z_m < tapa_inferior
-    v_vel[mask_inf] = -0.4 * (1.0 - y_adim_m[mask_inf]**2)
-    w_vel[mask_inf] *= z_m[mask_inf] / 0.15
+    for z in z_niveles:
+        for x in x_posiciones:
+            # 1. Corriente Ascendente (Próxima a la pared caliente y = -B * 0.5)
+            y_hot = -B * 0.5
+            y_hot_adim = y_hot / B
+            w_hot = ((rho_barra * g * beta_val * delta_T * (B**2)) / (12 * mu)) * (y_hot_adim**3 - y_hot_adim)
+            
+            x_v.append(x); y_v.append(y_hot); z_v.append(z)
+            u_v.append(0.0); v_v.append(0.0); w_v.append(w_hot)
+            
+            # 2. Corriente Descendente (Próxima a la pared fría y = +B * 0.5)
+            y_cold = B * 0.5
+            y_cold_adim = y_cold / B
+            w_cold = ((rho_barra * g * beta_val * delta_T * (B**2)) / (12 * mu)) * (y_cold_adim**3 - y_cold_adim)
+            
+            x_v.append(x); y_v.append(y_cold); z_v.append(z)
+            u_v.append(0.0); v_v.append(0.0); w_v.append(w_cold)
+            
+    # Vectores de giro de transición en los extremos (Tapa Superior e Inferior)
+    for x in x_posiciones:
+        # Giro Superior: El aire caliente cruza de izquierda (-B) a derecha (+B)
+        x_v.append(x); y_v.append(0.0); z_v.append(L - 0.08)
+        u_v.append(0.0); v_v.append(0.15); w_v.append(0.0)
+        
+        # Giro Inferior: El aire frío cruza de derecha (+B) a izquierda (-B)
+        x_v.append(x); y_v.append(0.0); z_v.append(0.08)
+        u_v.append(0.0); v_v.append(-0.15); w_v.append(0.0)
 
-    # Dibujamos las líneas de corriente continuas (Streamtubes) que muestran el camino exacto del aire
-    fig_3d.add_trace(go.Streamtube(
-        x=x_m.flatten(), y=y_m.flatten(), z=z_m.flatten(),
-        u=u_vel.flatten(), v=v_vel.flatten(), w=w_vel.flatten(),
-        starts=dict(
-            x=[0.2, 0.2, 0.2],
-            y=[-B*0.6, 0.0, B*0.6],
-            z=[0.2, L/2, L-0.2]
-        ),
-        sizeref=0.15,
-        colorscale='Turbid',
+    # Añadir los conos vectoriales al lienzo (Código ultra compatible y de alta velocidad)
+    fig_3d.add_trace(go.Cone(
+        x=x_v, y=y_v, z=z_v,
+        u=u_v, v=v_v, w=w_v,
+        colorscale='Cyanblue',
         showscale=False,
-        maxpoints=1000
+        sizemode='scaled',
+        sizeref=0.25,
+        anchor='tip'
     ))
     
-    # Configuración de diseño general limpio
+    # Configuración de diseño general
     fig_3d.update_layout(
         template="plotly_dark",
         height=480,
@@ -238,7 +238,7 @@ with inf_col2:
         showlegend=False
     )
     
-    # Ejes tridimensionales estilizados con las dimensiones y cotas geométricas reales
+    # Ejes tridimensionales estilizados con las dimensiones reales
     fig_3d.update_scenes(
         xaxis_title="Profundidad W (m)",
         yaxis_title="Espesor y (m)",
@@ -250,4 +250,4 @@ with inf_col2:
     )
     
     st.plotly_chart(fig_3d, use_container_width=True)
-    st.caption("🔍 **Simulación Aerodinámica:** Rota el cubo para ver el espesor real de las paredes y las líneas de corriente tridimensionales girando arriba y abajo.")
+    st.caption("🔍 **Simulación Aerodinámica:** Rota el cubo para ver el espesor real de las paredes y las flechas cónicas completando el ciclo cerrado de convección.")
