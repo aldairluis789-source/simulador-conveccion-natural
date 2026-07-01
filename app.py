@@ -184,7 +184,6 @@ with inf_col2:
     fig_3d.add_trace(go.Surface(x=x_p, y=np.ones_like(z_p)*(B + espesor_pared), z=z_p, colorscale=[[0, '#0A3156'], [1, '#104E8B']], showscale=False, opacity=0.9))
     
     # --- SIMULACIÓN VECTORIAL ROBUSTA DEL BUCLE (CONOS INDEPENDIENTES) ---
-    # Colocamos niveles fijos a lo largo de la altura (Z) y profundidad (X) para sembrar los vectores
     z_niveles = np.linspace(0.15, L - 0.15, 8)
     x_posiciones = [0.1, 0.2, 0.3]
     
@@ -219,11 +218,11 @@ with inf_col2:
         x_v.append(x); y_v.append(0.0); z_v.append(0.08)
         u_v.append(0.0); v_v.append(-0.15); w_v.append(0.0)
 
-    # Añadir los conos vectoriales al lienzo (Código ultra compatible y de alta velocidad)
+    # Añadir los conos vectoriales al lienzo (Escala de color corregida a estándar 'Icefire')
     fig_3d.add_trace(go.Cone(
-        x=x_v, y=y_v, z=z_v,
-        u=u_v, v=v_v, w=w_v,
-        colorscale='Cyanblue',
+        x=np.array(x_v), y=np.array(y_v), z=np.array(z_v),
+        u=np.array(u_v), v=np.array(v_v), w=np.array(w_v),
+        colorscale='Icefire',
         showscale=False,
         sizemode='scaled',
         sizeref=0.25,
